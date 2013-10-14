@@ -32,8 +32,9 @@ def build():
 
     # copy statics, and assets
     for dir in ['assets', "statics"]:
-        __print_copy(dir, os.path.join(OUTPUT_DIR, dir))
-        shutil.copytree(dir, os.path.join(OUTPUT_DIR,dir))
+        if os.path.exists(dir):
+            __print_copy(dir, os.path.join(OUTPUT_DIR, dir))
+            shutil.copytree(dir, os.path.join(OUTPUT_DIR,dir))
 
     # copy resources (we merge)
     for root, dirs, files in os.walk(RESOURCES_DIR):
