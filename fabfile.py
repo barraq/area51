@@ -2,10 +2,13 @@ import os
 import re
 import shutil
 import jinja2
-import fabric
 
-TEMPLATES_DIR = "templates"
+from fabric.api import run, execute, task, abort
+from fabric.colors import yellow, blue, red
+
 OUTPUT_DIR = "gen"
+TEMPLATES_DIR = "templates"
+RESOURCES_DIR = "resources"
 PROTECTED_DIRS = ['assets', 'statics', 'templates']
 
 ABS_ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -13,26 +16,37 @@ ABS_ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 ABS_OUTPUT_PATH = os.path.join(ABS_ROOT_PATH, OUTPUT_DIR)
 
 
+@task
 def clean():
+    """Clean up directory."""
     if os.path.exists(ABS_OUTPUT_PATH):
         __print_remove(OUTPUT_DIR)
         shutil.rmtree(ABS_OUTPUT_PATH)
 
 
+@task
 def build():
     # clean first...
-    clean()
+    execute(clean)
 
     # copy statics, and assets
     for dir in ['assets', "statics"]:
-        __print_move(dir, os.path.join(OUTPUT_DIR, dir))
+        __print_copy(dir, os.path.join(OUTPUT_DIR, dir))
         shutil.copytree(dir, os.path.join(OUTPUT_DIR,dir))
+
+    # copy resources (we merge)
+    for root, dirs, files in os.walk(RESOURCES_DIR):
+        for file in files:
+            __print_copy(os.path.join(root, file), os.path.join(OUTPUT_DIR, file))
+            shutil.copyfile(os.path.join(root, file), os.path.join(OUTPUT_DIR, file))
 
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=TEMPLATES_DIR))
 
     # go through each files in TEMPLATES_DIR
     for root, dirs, files in os.walk(TEMPLATES_DIR):
         for dir in dirs:
+            if dir in PROTECTED_DIRS:
+                abort(red("you cannot use restricted names (i.e. {}) for naming your directories.".format(','.join(PROTECTED_DIRS))))
             __print_create(os.path.join(OUTPUT_DIR, dir))
             os.makedirs(os.path.join(ABS_OUTPUT_PATH, dir))
         for file in files:
@@ -44,21 +58,25 @@ def build():
                  with open(os.path.join(file_output_dir, file), "wb") as fh:
                     fh.write(template.render())
 
+@task
+def publish():
+
+
 
 # --- stupid output functions ---
 
 
 def __print_create(path):
-    print(fabric.colors.yellow("creating ")+fabric.colors.blue(os.path.join(path)))
+    print(yellow("creating ")+blue(os.path.join(path)))
 
 
-def __print_move(src, dst):
-    print(fabric.colors.yellow("moving ")+fabric.colors.blue(src)+" to "+fabric.colors.blue(dst))
+def __print_copy(src, dst):
+    print(yellow("copying ")+blue(src)+" to "+blue(dst))
 
 
 def __print_remove(path):
-    print(fabric.colors.yellow("removing ")+fabric.colors.blue(path))
+    print(yellow("removing ")+blue(path))
 
 
 def __print_build(root, file):
-    print(fabric.colors.yellow("building ")+fabric.colors.blue(os.path.join(root, file)))
+    print(yellow("building ")+blue(os.path.join(root, file)))
