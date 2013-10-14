@@ -1,9 +1,10 @@
 import os
 import re
+import time
 import shutil
 import jinja2
 
-from fabric.api import run, execute, task, abort
+from fabric.api import run, execute, task, abort, local
 from fabric.colors import yellow, blue, red
 
 OUTPUT_DIR = "gen"
@@ -59,8 +60,18 @@ def build():
                     fh.write(template.render())
 
 @task
-def publish():
-    pass
+def publish(from_branch="master", to_branch="gh-pages"):
+    local("git branch -D {0}".format(to_branch))
+    local("git checkout --orphan {0}".format(to_branch))
+    local("git rm --cached $(git ls-files)")
+    execute(build)
+    local("git clean -xdf -e {0}".format(OUTPUT_DIR))
+    local("mv gen/* .")
+    local("rm -r {0}".format(OUTPUT_DIR))
+    local("git add .")
+    local("git commit -m \"updating at {0}\"".format(time.strftime("%d %b %Y %H:%M%S", time.localtime())))
+    local("git push origin {0} --force".format(OUTPUT_DIR))
+    local("git checkout {0}".format(from_branch))
 
 
 # --- stupid output functions ---
