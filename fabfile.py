@@ -60,7 +60,7 @@ def build():
 
 @task
 def publish():
-
+    pass
 
 
 # --- stupid output functions ---
