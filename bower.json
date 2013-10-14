@@ -2,6 +2,6 @@
 	"name": "dahuapp.github.io",
 	"version": "0.0.1",
 	"dependencies": {
-		"semantic": "0.5.1"
+		"semantic": "0.6.0"
 	}
 }
