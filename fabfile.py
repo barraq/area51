@@ -71,7 +71,7 @@ def publish(from_branch="master", to_branch="gh-pages"):
     local("rm -r {0}".format(OUTPUT_DIR))
     local("git add .")
     local("git commit -m \"updating at {0}\"".format(time.strftime("%d %b %Y %H:%M%S", time.localtime())))
-    local("git push origin {0} --force".format(OUTPUT_DIR))
+    local("git push origin {0} --force".format(to_branch))
     local("git checkout {0}".format(from_branch))
 
 
