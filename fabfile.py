@@ -10,7 +10,8 @@ from fabric.colors import yellow, blue, red
 OUTPUT_DIR = "gen"
 TEMPLATES_DIR = "templates"
 RESOURCES_DIR = "resources"
-PROTECTED_DIRS = ['assets', 'statics', 'templates']
+STATICS_DIRS = "statics"
+PROTECTED_DIRS = [STATICS_DIRS, TEMPLATES_DIR]
 
 ABS_ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,24 +20,25 @@ ABS_OUTPUT_PATH = os.path.join(ABS_ROOT_PATH, OUTPUT_DIR)
 
 @task
 def clean():
-    """Clean up directory."""
+    """Clean up generated files."""
     if os.path.exists(ABS_OUTPUT_PATH):
         __print_remove(OUTPUT_DIR)
         shutil.rmtree(ABS_OUTPUT_PATH)
 
 
 @task
-def build():
+def generate():
+    """Generate website locally."""
+
     # clean first...
     execute(clean)
 
-    # copy statics, and assets
-    for dir in ['assets', "statics"]:
-        if os.path.exists(dir):
-            __print_copy(dir, os.path.join(OUTPUT_DIR, dir))
-            shutil.copytree(dir, os.path.join(OUTPUT_DIR,dir))
+    # copy statics
+    if os.path.exists(STATICS_DIRS):
+        __print_copy(STATICS_DIRS, os.path.join(OUTPUT_DIR, STATICS_DIRS))
+        shutil.copytree(STATICS_DIRS, os.path.join(OUTPUT_DIR, STATICS_DIRS))
 
-    # copy resources (we merge)
+    # merge resources
     for root, dirs, files in os.walk(RESOURCES_DIR):
         for file in files:
             __print_copy(os.path.join(root, file), os.path.join(OUTPUT_DIR, file))
@@ -48,24 +50,27 @@ def build():
     for root, dirs, files in os.walk(TEMPLATES_DIR):
         for dir in dirs:
             if dir in PROTECTED_DIRS:
-                abort(red("you cannot use restricted names (i.e. {}) for naming your directories.".format(','.join(PROTECTED_DIRS))))
+                abort(red("you cannot use restricted names (i.e. {}) for naming your directories.".format(
+                    ','.join(PROTECTED_DIRS))))
             __print_create(os.path.join(OUTPUT_DIR, dir))
             os.makedirs(os.path.join(ABS_OUTPUT_PATH, dir))
         for file in files:
-             name, ext = os.path.splitext(file)
-             if not name.startswith("_") and ext == ".html":
-                 __print_build(root, file)
-                 template = env.get_template(file)
-                 file_output_dir = re.sub(r"^({})".format(TEMPLATES_DIR), OUTPUT_DIR, root)
-                 with open(os.path.join(file_output_dir, file), "wb") as fh:
+            name, ext = os.path.splitext(file)
+            if not name.startswith("_") and ext == ".html":
+                __print_build(root, file)
+                template = env.get_template(file)
+                file_output_dir = re.sub(r"^({})".format(TEMPLATES_DIR), OUTPUT_DIR, root)
+                with open(os.path.join(file_output_dir, file), "wb") as fh:
                     fh.write(template.render())
+
 
 @task
 def publish(from_branch="master", to_branch="gh-pages"):
     local("git branch -D {0}".format(to_branch))
     local("git checkout --orphan {0}".format(to_branch))
     local("git rm --cached $(git ls-files)")
-    execute(build)
+    local("bower install")
+    execute(generate)
     local("git clean -xdf -e {0}".format(OUTPUT_DIR))
     local("mv gen/* .")
     local("rm -r {0}".format(OUTPUT_DIR))
@@ -79,16 +84,16 @@ def publish(from_branch="master", to_branch="gh-pages"):
 
 
 def __print_create(path):
-    print(yellow("creating ")+blue(os.path.join(path)))
+    print(yellow("creating ") + blue(os.path.join(path)))
 
 
 def __print_copy(src, dst):
-    print(yellow("copying ")+blue(src)+" to "+blue(dst))
+    print(yellow("copying ") + blue(src) + " to " + blue(dst))
 
 
 def __print_remove(path):
-    print(yellow("removing ")+blue(path))
+    print(yellow("removing ") + blue(path))
 
 
 def __print_build(root, file):
-    print(yellow("building ")+blue(os.path.join(root, file)))
+    print(yellow("building ") + blue(os.path.join(root, file)))
