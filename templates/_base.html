@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}{% endblock %}</title>
+
+  <link rel="stylesheet" href="css/styles.css?v=1.0">
+</head>
+<body>
+    <div class="ui fixed main menu">
+        <div class="container">
+            <div class="title item">Dahu</div>
+        </div>
+    </div>
+    {% block content %}{% endblock %}
+    <div class="ui divider"></div>
+    <div class="ui divider horizontal footer link list">
+        <div class="item">Dahu 2013</div>
+        <a class="item" href="https://github.com/dahuapp/Dahu.git">Github</a>
+    </div>
+</body>
+</html>
